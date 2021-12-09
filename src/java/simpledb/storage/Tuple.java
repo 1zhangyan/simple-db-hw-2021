@@ -1,8 +1,9 @@
 package simpledb.storage;
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
@@ -10,6 +11,10 @@ import java.util.Iterator;
  * with the data for each field.
  */
 public class Tuple implements Serializable {
+
+    private TupleDesc tupleDesc;
+
+    private List<Field> fields;
 
     private static final long serialVersionUID = 1L;
 
@@ -21,15 +26,15 @@ public class Tuple implements Serializable {
      *            instance with at least one field.
      */
     public Tuple(TupleDesc td) {
-        // some code goes here
+        this.tupleDesc = td;
+        fields = new ArrayList<>(2);
     }
 
     /**
      * @return The TupleDesc representing the schema of this tuple.
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return this.tupleDesc;
     }
 
     /**
@@ -60,7 +65,10 @@ public class Tuple implements Serializable {
      *            new value for the field.
      */
     public void setField(int i, Field f) {
-        // some code goes here
+        if (f == null || i < 0 || i > fields.size()) {
+            return;
+        }
+        this.fields.add(i, f);
     }
 
     /**
@@ -70,8 +78,12 @@ public class Tuple implements Serializable {
      *            field index to return. Must be a valid index.
      */
     public Field getField(int i) {
-        // some code goes here
-        return null;
+        try {
+            return this.fields.get(i);
+        } catch (Throwable t) {
+            System.out.println(t.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -83,8 +95,18 @@ public class Tuple implements Serializable {
      * where \t is any whitespace (except a newline)
      */
     public String toString() {
-        // some code goes here
-        throw new UnsupportedOperationException("Implement this");
+        StringBuilder tupleStr = new StringBuilder("");
+        this.fields.forEach(
+                it -> {
+                    if (it != null) {
+                        tupleStr.append(it.toString()).append("\t");
+                    } else {
+                        tupleStr.append("null").append("\t");
+                    }
+                }
+        );
+        tupleStr.deleteCharAt(tupleStr.length()-1);
+        return tupleStr.toString();
     }
 
     /**
@@ -93,8 +115,8 @@ public class Tuple implements Serializable {
      * */
     public Iterator<Field> fields()
     {
+        return this.fields.iterator();
         // some code goes here
-        return null;
     }
 
     /**
@@ -102,6 +124,7 @@ public class Tuple implements Serializable {
      * */
     public void resetTupleDesc(TupleDesc td)
     {
+        tupleDesc = td;
         // some code goes here
     }
 }

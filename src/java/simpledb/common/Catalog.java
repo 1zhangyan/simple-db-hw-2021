@@ -1,6 +1,7 @@
 package simpledb.common;
 
-import simpledb.common.Type;
+import Zql.ZDelete;
+import com.sun.tools.javac.util.StringUtils;
 import simpledb.storage.DbFile;
 import simpledb.storage.HeapFile;
 import simpledb.storage.TupleDesc;
@@ -9,8 +10,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * The Catalog keeps track of all available tables in the database and their
@@ -23,12 +30,31 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    Map<String, Integer> nameIdMap;
+    Map<Integer, Table> idTableMap;
+
+
+    private static class Table {
+
+        DbFile dbFile;
+        String tableName;
+        String pkeyField;
+
+        Table( DbFile dbFile, String name, String pkeyField) {
+            this.dbFile = dbFile;
+            this.tableName = name;
+            this.pkeyField = pkeyField;
+        }
+
+    }
+
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        // some code goes here
+        nameIdMap = new ConcurrentHashMap<String,Integer>();
+        idTableMap = new ConcurrentHashMap<Integer,Table>();
     }
 
     /**
@@ -41,7 +67,19 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+        if(file == null || name == null) {
+           return;
+        }
+        Integer id = nameIdMap.get(name);
+        if(id != null) {
+            idTableMap.remove(id);
+            nameIdMap.remove(name);
+        }
+
+        Table newTable = new Table(file, name, pkeyField);
+
+        nameIdMap.put(newTable.tableName, file.getId());
+        idTableMap.put(newTable.dbFile.getId(), newTable);
     }
 
     public void addTable(DbFile file, String name) {
@@ -64,8 +102,10 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+        if (name == null || nameIdMap.get(name) == null ) {
+            throw new NoSuchElementException();
+        }
+        return idTableMap.get(nameIdMap.get(name)).dbFile.getId();
     }
 
     /**
@@ -75,8 +115,11 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        Table table = idTableMap.get(tableid);
+        if (table == null) {
+            throw new NoSuchElementException();
+        }
+        return table.dbFile.getTupleDesc();
     }
 
     /**
@@ -86,28 +129,37 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        Table table = idTableMap.get(tableid);
+        if (table == null) {
+            throw new NoSuchElementException();
+        }
+        return table.dbFile;
     }
 
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+        Table table = idTableMap.get(tableid);
+        if (table == null) {
+            throw new NoSuchElementException();
+        }
+        return table.pkeyField;
     }
 
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+        return idTableMap.keySet().iterator();
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+        Table table = idTableMap.get(id);
+        if (table == null) {
+            throw new NoSuchElementException();
+        }
+        return table.tableName;
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
-        // some code goes here
+        idTableMap.clear();//TODO clear all things
+        nameIdMap.clear();//TODO：clear all things
     }
     
     /**
