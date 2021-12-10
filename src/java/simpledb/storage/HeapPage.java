@@ -71,10 +71,16 @@ public class HeapPage implements Page {
     /** Retrieve the number of tuples on this page.
         @return the number of tuples on this page
     */
-    private int getNumTuples() {        
-        // some code goes here
-        return 0;
-
+    private int getNumTuples() {
+        Integer tupleSize = td.getSize();
+        /**
+         * BufferPool.getPageSize() is the size of a physical page.
+         * tupleSize means the size a tuple will occupy.
+         * 1 means every tuple will occupy a slot extra.
+         * by zhangyan
+         */
+        Double numTuples =  Math.floor(BufferPool.getPageSize() /(tupleSize * 8 + 1));
+        return numTuples.intValue();
     }
 
     /**
@@ -82,10 +88,7 @@ public class HeapPage implements Page {
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
     private int getHeaderSize() {        
-        
-        // some code goes here
-        return 0;
-                 
+        return header.length;
     }
     
     /** Return a view of this page before it was modified
@@ -117,8 +120,7 @@ public class HeapPage implements Page {
      * @return the PageId associated with this page.
      */
     public HeapPageId getId() {
-    // some code goes here
-    throw new UnsupportedOperationException("implement this");
+        return pid;
     }
 
     /**
@@ -249,6 +251,7 @@ public class HeapPage implements Page {
      * @param t The tuple to delete
      */
     public void deleteTuple(Tuple t) throws DbException {
+
         // some code goes here
         // not necessary for lab1
     }

@@ -1,10 +1,11 @@
 package simpledb.common;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import simpledb.storage.BufferPool;
 import simpledb.storage.LogFile;
 
-import java.io.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Database is a class that initializes several static variables used by the
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * Provides a set of methods that can be used to access these variables from
  * anywhere.
- * 
+ *
  * @Threadsafe
  */
 public class Database {
@@ -58,7 +59,7 @@ public class Database {
      * return it
      */
     public static BufferPool resetBufferPool(int pages) {
-        java.lang.reflect.Field bufferPoolF=null;
+        java.lang.reflect.Field bufferPoolF = null;
         try {
             bufferPoolF = Database.class.getDeclaredField("_bufferpool");
             bufferPoolF.setAccessible(true);
