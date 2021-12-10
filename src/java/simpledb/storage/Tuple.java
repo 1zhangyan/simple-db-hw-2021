@@ -116,7 +116,6 @@ public class Tuple implements Serializable {
     public Iterator<Field> fields()
     {
         return this.fields.iterator();
-        // some code goes here
     }
 
     /**
@@ -125,6 +124,13 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(TupleDesc td)
     {
         tupleDesc = td;
-        // some code goes here
+    }
+
+    public boolean equals(Object o) {
+        if (o == null || !(o instanceof Tuple)) {
+            return this == o;
+        }
+        Tuple target = (Tuple)o;
+        return (this.toString().equals(target.toString()));
     }
 }

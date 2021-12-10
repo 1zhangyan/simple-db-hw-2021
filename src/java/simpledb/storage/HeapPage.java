@@ -5,9 +5,11 @@ import simpledb.common.DbException;
 import simpledb.common.Debug;
 import simpledb.common.Catalog;
 import simpledb.transaction.TransactionId;
+import sun.security.util.BitArray;
 
 import java.util.*;
 import java.io.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Each instance of HeapPage stores data for one page of HeapFiles and 
@@ -24,6 +26,9 @@ public class HeapPage implements Page {
     final byte[] header;
     final Tuple[] tuples;
     final int numSlots;
+
+    Map<Integer, Tuple> slotTupleMap;
+    List<Boolean> slots;
 
     byte[] oldData;
     private final Byte oldDataLock= (byte) 0;
@@ -48,6 +53,7 @@ public class HeapPage implements Page {
         this.pid = id;
         this.td = Database.getCatalog().getTupleDesc(id.getTableId());
         this.numSlots = getNumTuples();
+        slotTupleMap = new ConcurrentHashMap<>();
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 
         // allocate and read the header slots of this page
@@ -58,14 +64,16 @@ public class HeapPage implements Page {
         tuples = new Tuple[numSlots];
         try{
             // allocate and read the actual records of this page
-            for (int i=0; i<tuples.length; i++)
+            for (int i=0; i<tuples.length; i++) {
                 tuples[i] = readNextTuple(dis,i);
+                slotTupleMap.put(i, tuples[i]);
+            }
         }catch(NoSuchElementException e){
             e.printStackTrace();
         }
         dis.close();
-
         setBeforeImage();
+
     }
 
     /** Retrieve the number of tuples on this page.
@@ -74,12 +82,12 @@ public class HeapPage implements Page {
     private int getNumTuples() {
         Integer tupleSize = td.getSize();
         /**
-         * BufferPool.getPageSize() is the size of a physical page.
-         * tupleSize means the size a tuple will occupy.
-         * 1 means every tuple will occupy a slot extra.
+         * BufferPool.getPageSize() means the size of a physical page.The unit of it is Bit.
+         * tupleSize means the size a tuple will occupy which can get from the TupleDesc.Note the unit of it is Byte.
+         * 1 means every tuple will occupy a Bit in header extra to show its status.
          * by zhangyan
          */
-        Double numTuples =  Math.floor(BufferPool.getPageSize() /(tupleSize * 8 + 1));
+        Double numTuples = Math.floor(BufferPool.getPageSize() /(tupleSize * 8.0 + 1));
         return numTuples.intValue();
     }
 
@@ -87,8 +95,9 @@ public class HeapPage implements Page {
      * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
-    private int getHeaderSize() {        
-        return header.length;
+    private int getHeaderSize() {
+        Double headerSize = Math.ceil(numSlots / 8.0);
+        return headerSize.intValue();
     }
     
     /** Return a view of this page before it was modified
@@ -252,8 +261,6 @@ public class HeapPage implements Page {
      */
     public void deleteTuple(Tuple t) throws DbException {
 
-        // some code goes here
-        // not necessary for lab1
     }
 
     /**
@@ -264,8 +271,7 @@ public class HeapPage implements Page {
      * @param t The tuple to add.
      */
     public void insertTuple(Tuple t) throws DbException {
-        // some code goes here
-        // not necessary for lab1
+
     }
 
     /**
@@ -283,7 +289,7 @@ public class HeapPage implements Page {
     public TransactionId isDirty() {
         // some code goes here
 	// Not necessary for lab1
-        return null;      
+        return null;
     }
 
     /**
@@ -298,9 +304,23 @@ public class HeapPage implements Page {
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-        // some code goes here
-        return false;
+       return slotTupleMap.get(i) != null;
     }
+
+    public static void main(String args[]) {
+
+        Integer i  = 9;
+        Byte header[] = new Byte[2];
+        header[0] = (byte)255;
+        header[1] = (byte)127;
+
+        int byteIndex = i / 8;
+        int bitIndex = i % 8;
+        int flag = (header[byteIndex] >> (8 - bitIndex)) & 1;
+
+        System.out.println(flag);
+    }
+
 
     /**
      * Abstraction to fill or clear a slot on this page.
@@ -315,8 +335,28 @@ public class HeapPage implements Page {
      * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        // some code goes here
         return null;
+    }
+
+    /**
+     * get the point index Bit value from a 8 bit Byte.
+     * assuming that the index is valid(0 <= index < 8) cause 1 Byte = 8 Bit
+     * @param index
+     */
+    private Boolean getBitFromByte(byte source, int index) {
+        return ((source >> (8 - index)) & 1) == 1;
+    }
+
+    private byte setBitToByte(byte source, int index, Boolean value) {
+        boolean indexValue = getBitFromByte(source, index);
+        if (indexValue == value) {
+            return source;
+        }
+        if (indexValue) {
+            return (byte) (source & 0xFC);
+        } else {
+            return (byte) (source | 0x02);
+        }
     }
 
 }
