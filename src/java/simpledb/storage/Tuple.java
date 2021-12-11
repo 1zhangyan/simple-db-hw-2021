@@ -32,6 +32,7 @@ public class Tuple implements Serializable {
         fields = new ArrayList<>(2);
     }
 
+
     /**
      * @return The TupleDesc representing the schema of this tuple.
      */

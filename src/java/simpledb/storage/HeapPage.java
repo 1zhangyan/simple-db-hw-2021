@@ -27,8 +27,6 @@ public class HeapPage implements Page {
     final Tuple[] tuples;
     final int numSlots;
 
-    Map<Tuple, Integer> slotTupleMap;
-
     byte[] oldData;
     private final Byte oldDataLock= (byte) 0;
 
@@ -52,7 +50,6 @@ public class HeapPage implements Page {
         this.pid = id;
         this.td = Database.getCatalog().getTupleDesc(id.getTableId());
         this.numSlots = getNumTuples();
-        slotTupleMap = new ConcurrentHashMap<>();
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 
         // allocate and read the header slots of this page
@@ -65,7 +62,6 @@ public class HeapPage implements Page {
             // allocate and read the actual records of this page
             for (int i=0; i < tuples.length; i++) {
                 tuples[i] = readNextTuple(dis,i);
-                slotTupleMap.put(tuples[i], i);
             }
         }catch(NoSuchElementException e){
             e.printStackTrace();
@@ -86,7 +82,8 @@ public class HeapPage implements Page {
          * 1 means every tuple will occupy a Bit in header extra to show its status.
          * by zhangyan
          */
-        Double numTuples = Math.floor(BufferPool.getPageSize() /(tupleSize * 8.0 + 1));
+        int i = BufferPool.getPageSize();
+        Double numTuples = Math.floor(BufferPool.getPageSize() * 8 /(tupleSize * 8 + 1));
         return numTuples.intValue();
     }
 
@@ -259,12 +256,17 @@ public class HeapPage implements Page {
      * @param t The tuple to delete
      */
     public void deleteTuple(Tuple t) throws DbException {
-        Integer index = slotTupleMap.get(t);
-        if (t == null || index == null) {
-            throw new DbException("Not Found tuple : null");
+        int index = 0;
+        for (index = 0; index < numSlots; index++) {
+            if (tuples[index].equals(t)) {
+                break;
+            }
         }
+        if (index >= numSlots || getHeaderBit(index) == false) {
+            throw new DbException("Can not find tuple " + t.toString());
+        }
+        tuples[index] = null;
         setHeaderBit(index, false);
-        slotTupleMap.remove(t);
     }
 
     /**
@@ -275,16 +277,16 @@ public class HeapPage implements Page {
      * @param t The tuple to add.
      */
     public void insertTuple(Tuple t) throws DbException {
-       if(slotTupleMap.size() >= getNumTuples()) {
-           throw new DbException("Can not find empty slot.");
-       }
        Integer index = 0;
-       for (index = 0 ; index < getNumTuples(); index ++){
-           if(!slotTupleMap.containsValue(index)) {
+       for (index = 0 ; index < numSlots; index ++){
+           if(!getHeaderBit(index)) {
                break;
            }
        }
-       slotTupleMap.put(t, index);
+       if (index >= numSlots || getHeaderBit(index) == false) {
+            throw new DbException("Can not find tuple " + t.toString());
+        }
+       tuples[index] = t;
        setHeaderBit(index, true);
     }
 
@@ -309,14 +311,18 @@ public class HeapPage implements Page {
      * Returns the number of empty slots on this page.
      */
     public int getNumEmptySlots() {
-        return getNumTuples() - slotTupleMap.size();
+        int count = 0;
+        for (int i = 0; i < numSlots; i++) {
+            count += getHeaderBit(i)? 0 : 1;
+        }
+        return count;
     }
 
     /**
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-       return slotTupleMap.get(i) != null;
+       return getHeaderBit(i);
     }
 
     /**
@@ -331,7 +337,7 @@ public class HeapPage implements Page {
      * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        return slotTupleMap.keySet().iterator();
+        return Arrays.asList(tuples).stream().filter(it -> it != null).iterator();
     }
 
     /**
@@ -351,19 +357,15 @@ public class HeapPage implements Page {
         header[headerOffset] = setBitToByte(header[headerOffset], byteOffset, value);
     }
 
-    private Boolean getBitFromByte(byte source, int index) {
-        return ((source >> (8 - index)) & 1) == 1;
+    private static Boolean getBitFromByte(byte source, int index) {
+        return ((source >> index) & 1) == 1;
     }
 
-    private byte setBitToByte(byte source, int index, Boolean value) {
-        boolean indexValue = getBitFromByte(source, index);
-        if (indexValue == value) {
-            return source;
-        }
-        if (indexValue) {
-            return (byte) (source & 0xFC);
+    private static byte setBitToByte(byte source, int index, Boolean value) {
+        if (value) {
+            return (byte)((1 << index) | source);
         } else {
-            return (byte) (source | 0x02);
+            return (byte)((~(1 << index)) & source);
         }
     }
 

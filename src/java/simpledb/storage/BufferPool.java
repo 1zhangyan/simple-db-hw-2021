@@ -38,7 +38,10 @@ public class BufferPool {
      *
      * @param numPages maximum number of pages in this buffer pool.
      */
+    Integer numPages;
+
     public BufferPool(int numPages) {
+        this.numPages = numPages;
         // some code goes here
     }
     
