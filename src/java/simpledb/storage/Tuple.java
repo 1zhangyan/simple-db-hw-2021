@@ -16,6 +16,8 @@ public class Tuple implements Serializable {
 
     private List<Field> fields;
 
+    private RecordId recordId;
+
     private static final long serialVersionUID = 1L;
 
     /**
@@ -42,8 +44,7 @@ public class Tuple implements Serializable {
      *         be null.
      */
     public RecordId getRecordId() {
-        // some code goes here
-        return null;
+        return recordId;
     }
 
     /**
@@ -53,7 +54,7 @@ public class Tuple implements Serializable {
      *            the new RecordId for this tuple.
      */
     public void setRecordId(RecordId rid) {
-        // some code goes here
+        this.recordId = rid;
     }
 
     /**
