@@ -1,6 +1,7 @@
 package simpledb.storage;
 
 import simpledb.common.Database;
+import simpledb.common.LRUSelector;
 import simpledb.common.Permissions;
 import simpledb.common.DbException;
 import simpledb.common.DeadlockException;
@@ -9,6 +10,9 @@ import simpledb.transaction.TransactionId;
 
 import java.io.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -38,13 +42,19 @@ public class BufferPool {
      *
      * @param numPages maximum number of pages in this buffer pool.
      */
-    Integer numPages;
+    private Integer numPages;
+
+    private ConcurrentHashMap<PageId, Page> pageMap;
+
+    private LRUSelector<PageId> lruSelector;
+
 
     public BufferPool(int numPages) {
         this.numPages = numPages;
-        // some code goes here
+        pageMap = new ConcurrentHashMap<PageId, Page>();
+        lruSelector = new LRUSelector<PageId>(numPages);
     }
-    
+
     public static int getPageSize() {
       return pageSize;
     }
@@ -74,10 +84,31 @@ public class BufferPool {
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
+    public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+        if (pid == null) {
+            throw new DbException("Page Id can not be null");
+        }
+        if (lruSelector.isExist(pid)) {
+            lruSelector.markUsedNow(pid);
+            return pageMap.get(pid);
+        }
+        PageId expirePageId = lruSelector.markUsedNow(pid);
+        if (expirePageId != null) {
+            pageMap.remove(expirePageId);
+        }
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+        Page page = dbFile.readPage(pid);
+        pageMap.put(pid, page);
+        return page;
+        /*
+        if (pageMap.contains(pid)) {
+            return pageMap.get(pid);
+        }
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+        Page page = dbFile.readPage(pid);
+        pageMap.put(pid, page);
+        return page;*/
     }
 
     /**

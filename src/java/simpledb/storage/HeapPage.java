@@ -8,6 +8,7 @@ import simpledb.transaction.TransactionId;
 import java.util.*;
 import java.io.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -80,7 +81,6 @@ public class HeapPage implements Page {
          * BufferPool.getPageSize() means the size of a physical page.The unit of it is Bit.
          * tupleSize means the size a tuple will occupy which can get from the TupleDesc.Note the unit of it is Byte.
          * 1 means every tuple will occupy a Bit in header extra to show its status.
-         * by zhangyan
          */
         int i = BufferPool.getPageSize();
         Double numTuples = Math.floor(BufferPool.getPageSize() * 8 /(tupleSize * 8 + 1));
@@ -256,9 +256,12 @@ public class HeapPage implements Page {
      * @param t The tuple to delete
      */
     public void deleteTuple(Tuple t) throws DbException {
+        if (t == null) {
+            throw new DbException("Tuple can not be null ");
+        }
         int index = 0;
         for (index = 0; index < numSlots; index++) {
-            if (tuples[index].equals(t)) {
+            if (t.equals(tuples[index])) {
                 break;
             }
         }
@@ -283,9 +286,11 @@ public class HeapPage implements Page {
                break;
            }
        }
-       if (index >= numSlots || getHeaderBit(index) == false) {
-            throw new DbException("Can not find tuple " + t.toString());
+       if (index >= numSlots || getHeaderBit(index) == true) {
+           throw new DbException("Can not insert position, index is " + index + ", numSlots is " + numSlots +", And tuple is : " + t.toString());
         }
+       RecordId rid = new RecordId(this.pid, index);
+       t.setRecordId(rid);
        tuples[index] = t;
        setHeaderBit(index, true);
     }

@@ -33,7 +33,6 @@ public class Catalog {
     Map<String, Integer> nameIdMap;
     Map<Integer, Table> idTableMap;
 
-
     private static class Table {
 
         DbFile dbFile;
