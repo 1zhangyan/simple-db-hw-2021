@@ -13,8 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class IntegerAggregatorOpIterator extends Operator {
-
+public class StringAggregatorOpIterator extends Operator{
     private List<Tuple> tuples;
 
     private Iterator<Tuple> rewindTupleIterator;
@@ -23,16 +22,13 @@ public class IntegerAggregatorOpIterator extends Operator {
 
     private Type groupByFieldType;
 
-    private Map<Field, List<Integer>> map;
-
-    private Aggregator.Op operator;
+    private Map<Field, Integer> map;
 
     private TupleDesc tupleDesc;
 
-    public IntegerAggregatorOpIterator(Map<Field, List<Integer>> map, Type groupByFieldType, Aggregator.Op operator){
+    public StringAggregatorOpIterator(Map<Field, Integer> map, Type groupByFieldType){
         this.map = map;
         this.groupByFieldType = groupByFieldType;
-        this.operator = operator;
         this.tuples = new ArrayList<>();
         tupleDesc = getTupleDesc();
     }
@@ -44,28 +40,12 @@ public class IntegerAggregatorOpIterator extends Operator {
                 it -> {
                     Tuple tuple = new Tuple(tupleDesc);
                     tuple.setField(0, it);
-                    tuple.setField(1, new IntField(getOperateRe(it)));
+                    tuple.setField(1, new IntField(map.get(it)));
                     tuples.add(tuple);
                 }
         );
         tupleIterator = tuples.iterator();
         rewindTupleIterator = tuples.iterator();
-    }
-
-    private Integer getOperateRe(Field field){
-        if (operator == Aggregator.Op.SUM)
-            return map.get(field).stream().mapToInt(it -> it).sum();
-        else if (operator == Aggregator.Op.MIN)
-            return map.get(field).stream().mapToInt(it -> it).min().orElse(-1);
-        else if (operator == Aggregator.Op.MAX)
-            return map.get(field).stream().mapToInt(it -> it).max().orElse(-1);
-        else if (operator == Aggregator.Op.AVG)
-            return ((Double)map.get(field).stream().mapToInt(it -> it).average().orElse(-1)).intValue();
-        else if (operator == Aggregator.Op.COUNT)
-            return ((Long)map.get(field).stream().mapToInt(it -> it).count()).intValue();
-        else {
-            return -1;
-        }
     }
 
     @Override
@@ -96,5 +76,4 @@ public class IntegerAggregatorOpIterator extends Operator {
     public void setChildren(OpIterator[] children) {
 
     }
-
 }

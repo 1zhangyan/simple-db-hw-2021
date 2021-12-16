@@ -1,22 +1,14 @@
 package simpledb.execution;
 
-import com.sun.tools.corba.se.idl.InterfaceGen;
-import simpledb.common.DbException;
 import simpledb.common.Type;
 import simpledb.storage.Field;
 import simpledb.storage.IntField;
-import simpledb.storage.StringField;
 import simpledb.storage.Tuple;
-import simpledb.storage.TupleDesc;
-import simpledb.transaction.TransactionAbortedException;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
  * Knows how to compute some aggregate over a set of IntFields.
