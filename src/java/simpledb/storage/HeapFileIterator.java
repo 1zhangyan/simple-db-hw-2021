@@ -14,6 +14,8 @@ public class HeapFileIterator implements DbFileIterator{
 
     private Iterator<Tuple> tupleIterator = null;
 
+    private Iterator<Tuple> rewindTupleIterator = null;
+
     private final TransactionId transactionId;
 
     private final HeapFile heapFile;
@@ -29,6 +31,7 @@ public class HeapFileIterator implements DbFileIterator{
     public void open() throws DbException, TransactionAbortedException {
         pageNumber = 0;
         tupleIterator = getPageByNumber(pageNumber).iterator();
+        rewindTupleIterator = tupleIterator;
     }
 
     @Override
@@ -69,7 +72,7 @@ public class HeapFileIterator implements DbFileIterator{
 
     @Override
     public void rewind() throws DbException, TransactionAbortedException {
-
+        tupleIterator = rewindTupleIterator;
     }
 
     @Override

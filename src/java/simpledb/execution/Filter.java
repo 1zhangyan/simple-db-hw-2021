@@ -1,11 +1,17 @@
 package simpledb.execution;
 
+import simpledb.common.Database;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.common.DbException;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+
 
 /**
  * Filter is an operator that implements a relational select.
@@ -13,6 +19,11 @@ import java.util.*;
 public class Filter extends Operator {
 
     private static final long serialVersionUID = 1L;
+
+    private Predicate predicate;
+
+    private OpIterator child;
+
 
     /**
      * Constructor accepts a predicate to apply and a child operator to read
@@ -24,30 +35,31 @@ public class Filter extends Operator {
      *            The child operator
      */
     public Filter(Predicate p, OpIterator child) {
-        // some code goes here
+        this.predicate = p;
+        this.child = child;
     }
 
     public Predicate getPredicate() {
-        // some code goes here
-        return null;
+        return predicate;
     }
 
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+       return child.getTupleDesc();
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-        // some code goes here
+        child.open();
+        super.open();
     }
 
     public void close() {
-        // some code goes here
+        child.close();
+        predicate = null;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+        child.rewind();
     }
 
     /**
@@ -61,8 +73,11 @@ public class Filter extends Operator {
      */
     protected Tuple fetchNext() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+        Tuple tuple = child.next();
+        while (predicate.filter(tuple) == false) {
+            tuple = child.next();
+        }
+        return tuple;
     }
 
     @Override
@@ -74,6 +89,16 @@ public class Filter extends Operator {
     @Override
     public void setChildren(OpIterator[] children) {
         // some code goes here
+    }
+
+    @Override
+    public boolean hasNext() {
+        try {
+            return super.hasNext();
+        } catch (Throwable t) {
+            System.out.println(t);
+            return false;
+        }
     }
 
 }

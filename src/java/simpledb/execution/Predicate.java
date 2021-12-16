@@ -105,6 +105,8 @@ public class Predicate implements Serializable {
      * @return true if the comparison is true, false otherwise.
      */
     public boolean filter(Tuple t) {
+        if (t == null)
+            return false;
         return t.getField(filed).compare(predicateOperator, operand);
     }
 
