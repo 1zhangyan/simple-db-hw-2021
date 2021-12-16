@@ -1,6 +1,8 @@
 package simpledb.execution;
 
+import simpledb.common.Database;
 import simpledb.common.DbException;
+import simpledb.common.Type;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
@@ -17,6 +19,10 @@ public class Aggregate extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+
+    Aggregator aggregator;
+
+
     /**
      * Constructor.
      * <p>
@@ -31,7 +37,7 @@ public class Aggregate extends Operator {
      * @param aop    The aggregation operator to use
      */
     public Aggregate(OpIterator child, int afield, int gfield, Aggregator.Op aop) {
-        // some code goes here
+
     }
 
     /**
@@ -40,8 +46,7 @@ public class Aggregate extends Operator {
      * {@link Aggregator#NO_GROUPING}
      */
     public int groupField() {
-        // some code goes here
-        return -1;
+       return  Aggregator.NO_GROUPING;
     }
 
     /**

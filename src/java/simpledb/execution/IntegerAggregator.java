@@ -1,7 +1,22 @@
 package simpledb.execution;
 
+import com.sun.tools.corba.se.idl.InterfaceGen;
+import simpledb.common.DbException;
 import simpledb.common.Type;
+import simpledb.storage.Field;
+import simpledb.storage.IntField;
+import simpledb.storage.StringField;
 import simpledb.storage.Tuple;
+import simpledb.storage.TupleDesc;
+import simpledb.transaction.TransactionAbortedException;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Knows how to compute some aggregate over a set of IntFields.
@@ -9,6 +24,19 @@ import simpledb.storage.Tuple;
 public class IntegerAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+
+
+    private int groupByField;
+
+    private Type groupByFieldType;
+
+    private int aggregateFiled;
+
+    private Op operator;
+
+    private Map<Field, List<Integer>> aggregateMap;
+
+
 
     /**
      * Aggregate constructor
@@ -26,7 +54,11 @@ public class IntegerAggregator implements Aggregator {
      */
 
     public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
-        // some code goes here
+        this.groupByField = gbfield;
+        this.groupByFieldType = gbfieldtype;
+        this.aggregateFiled = afield;
+        this.operator = what;
+        aggregateMap = new HashMap<>();
     }
 
     /**
@@ -37,8 +69,21 @@ public class IntegerAggregator implements Aggregator {
      *            the Tuple containing an aggregate field and a group-by field
      */
     public void mergeTupleIntoGroup(Tuple tup) {
-        // some code goes here
+        mergeIntoMap(tup.getField(groupByField), ((IntField)tup.getField(aggregateFiled)).getValue());
     }
+
+    private void mergeIntoMap(Field field, Integer value) {
+        List list;
+        if (aggregateMap.containsKey(field)) {
+            list = aggregateMap.get(field);
+        } else {
+            list = new ArrayList<Integer>();
+        }
+        list.add(value);
+        aggregateMap.put(field, list);
+        return;
+    }
+
 
     /**
      * Create a OpIterator over group aggregate results.
@@ -49,9 +94,9 @@ public class IntegerAggregator implements Aggregator {
      *         the constructor.
      */
     public OpIterator iterator() {
-        // some code goes here
-        throw new
-        UnsupportedOperationException("please implement me for lab2");
+        IntegerAggregatorOpIterator integerAggregatorOpIterator = new IntegerAggregatorOpIterator(aggregateMap, groupByFieldType, operator);
+        return integerAggregatorOpIterator;
     }
+
 
 }
