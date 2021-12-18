@@ -135,4 +135,12 @@ public class Tuple implements Serializable {
         Tuple target = (Tuple)o;
         return (this.toString().equals(target.toString()));
     }
+
+    public List<Field> getFields() {
+        return this.fields;
+    }
+
+    public void setFields(List<Field> fields) {
+        this.fields = fields;
+    }
 }
